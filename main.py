@@ -1,24 +1,19 @@
 import logging
 import os
-import asyncio
 from random import randint
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# Logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Token from environment
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise ValueError("No TELEGRAM_BOT_TOKEN set in environment variables")
-
-# --------------------- Handlers ---------------------
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
@@ -74,33 +69,16 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             "⚠️ Something went wrong. Please try again later."
         )
 
-# --------------------- Main ---------------------
-
-async def main() -> None:
-    """Start the bot (polling) and keep it running."""
+def main() -> None:
+    """Start the bot using run_polling (handles the loop internally)."""
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("random", random_command))
     application.add_error_handler(error_handler)
 
-    # Start polling (this runs forever)
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-    logger.info("Bot started polling. Press Ctrl+C to stop.")
-
-    # Keep the main task alive
-    try:
-        while True:
-            await asyncio.sleep(3600)
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Shutting down...")
-    finally:
-        await application.updater.stop()
-        await application.stop()
-        await application.shutdown()
-        logger.info("Bot stopped.")
+    # Start polling (blocks until interrupted)
+    application.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
